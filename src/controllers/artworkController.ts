@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
 
@@ -41,25 +43,27 @@ export const getArtworks = async (req: Request, res: Response) => {
 
 export const uploadArtwork = async (req: Request, res: Response) => {
     try {
-
         const { title, description } = req.body;
-        if (req.file === undefined || req.file === null || title === undefined || description === undefined)
-            return res.status(400).json({ error: 'No file uploaded' });
-        const image = req.file?.buffer!;
+        if (!req.file || !title || !description) {
+            console.log(req.file);
+            return res.status(400).json({ error: 'No file uploaded or missing fields' });
+        }
+        const { filename, path } = req.file;
         const newArtwork = await prisma.artwork.create({
             data: {
                 title,
                 description,
-                image,
+                imagePath: `https://api.spur.shivsarthak.com/uploads/${filename}`,
                 userId: res.locals.user.id,
             },
         });
+
         res.json(newArtwork);
     } catch (error) {
         console.error(error);
         res.sendStatus(500);
     }
-}
+};
 
 export const getArtworkComments = async (req: Request, res: Response) => {
     try {
